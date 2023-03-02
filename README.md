@@ -1,1 +1,440 @@
 # terraform_cloud-init
+
+
+
+root@linux:~# dpkg -l | grep open-vm-tools
+ii  open-vm-tools                          2:11.3.0-2ubuntu0~ubuntu20.04.4   amd64        Open VMware Tools for virtual machines hosted on VMware (CLI)
+root@linux:~#
+root@linux:~#
+
+
+root@linux:~# apt install open-vm-tools
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+open-vm-tools is already the newest version (2:11.3.0-2ubuntu0~ubuntu20.04.4).
+The following packages were automatically installed and are no longer required:
+  linux-headers-5.15.0-46-generic linux-headers-5.4.0-137 linux-headers-5.4.0-137-generic linux-hwe-5.15-headers-5.15.0-46 linux-image-5.15.0-46-generic linux-image-5.4.0-137-generic
+  linux-modules-5.15.0-46-generic linux-modules-5.4.0-137-generic linux-modules-extra-5.15.0-46-generic linux-modules-extra-5.4.0-137-generic
+Use 'apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+root@linux:~#
+root@linux:~#
+
+
+
+root@linux:~# vmtoolsd -v
+VMware Tools daemon, version 11.3.0.29534 (build-18090558)
+root@linux:~#
+
+root@linux:~# systemctl enable open-vm-tools.service
+Synchronizing state of open-vm-tools.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable open-vm-tools
+root@linux:~#
+root@linux:~# systemctl start open-vm-tools.service
+root@linux:~#
+
+
+
+root@linux:~# systemctl is-enabled open-vm-tools.service
+enabled
+root@linux:~#
+root@linux:~# systemctl status open-vm-tools.service
+● open-vm-tools.service - Service for virtual machines hosted on VMware
+     Loaded: loaded (/lib/systemd/system/open-vm-tools.service; enabled; vendor preset: enabled)
+     Active: active (running) since Thu 2023-03-02 06:08:57 +04; 9min ago
+       Docs: http://open-vm-tools.sourceforge.net/about.php
+   Main PID: 710 (vmtoolsd)
+      Tasks: 3 (limit: 9350)
+     Memory: 4.3M
+     CGroup: /system.slice/open-vm-tools.service
+             └─710 /usr/bin/vmtoolsd
+
+Mar 02 06:08:57 linux systemd[1]: Started Service for virtual machines hosted on VMware.
+root@linux:~#
+
+
+
+
+below returns empty,
+root@linux:~# dpkg -l | grep -w cloud-init
+root@linux:~#
+
+
+apt install cloud-init
+
+
+root@linux:~# apt install cloud-init
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+The following packages were automatically installed and are no longer required:
+  linux-headers-5.15.0-46-generic linux-headers-5.4.0-137 linux-headers-5.4.0-137-generic linux-hwe-5.15-headers-5.15.0-46 linux-image-5.15.0-46-generic linux-image-5.4.0-137-generic
+  linux-modules-5.15.0-46-generic linux-modules-5.4.0-137-generic linux-modules-extra-5.15.0-46-generic linux-modules-extra-5.4.0-137-generic
+Use 'apt autoremove' to remove them.
+The following additional packages will be installed:
+  eatmydata libeatmydata1 python3-distutils python3-importlib-metadata python3-json-pointer python3-jsonpatch python3-jsonschema python3-lib2to3 python3-more-itertools python3-pyrsistent
+  python3-setuptools python3-zipp
+Suggested packages:
+  python-jsonschema-doc python-setuptools-doc
+The following NEW packages will be installed:
+  cloud-init eatmydata libeatmydata1 python3-distutils python3-importlib-metadata python3-json-pointer python3-jsonpatch python3-jsonschema python3-lib2to3 python3-more-itertools
+  python3-pyrsistent python3-setuptools python3-zipp
+0 upgraded, 13 newly installed, 0 to remove and 0 not upgraded.
+Need to get 1,260 kB of archives.
+After this operation, 7,347 kB of additional disk space will be used.
+Do you want to continue? [Y/n] y
+
+
+
+root@linux:~# dpkg -l | grep -w cloud-init
+ii  cloud-init                             22.4.2-0ubuntu0~20.04.2           all          initialization and customization tool for cloud instances
+root@linux:~#
+
+
+it doesn't need to be started, but ensure it is enabled,
+
+root@linux:~# systemctl status cloud-init.service
+● cloud-init.service - Initial cloud-init job (metadata service crawler)
+     Loaded: loaded (/lib/systemd/system/cloud-init.service; enabled; vendor preset: enabled)
+     Active: inactive (dead)
+root@linux:~#
+root@linux:~# systemctl enable cloud-init.service
+root@linux:~#
+root@linux:~# sudo systemctl is-enabled cloud-init.service
+enabled
+root@linux:~#
+
+
+
+Ensure no datasources are enabled in /etc/cloud/cloud.cfg like below,
+
+root@linux:~# cat /etc/cloud/cloud.cfg | grep datasource
+# If you use datasource_list array, keep array items in a single line.
+# Example datasource config
+# datasource:
+root@linux:~#
+
+
+root@linux:/etc/cloud/cloud.cfg.d# cat /etc/cloud/cloud.cfg.d/90_dpkg.cfg
+# to update this file, run dpkg-reconfigure cloud-init
+datasource_list: [ NoCloud, ConfigDrive, OpenNebula, DigitalOcean, Azure, AltCloud, OVF, MAAS, GCE, OpenStack, CloudSigma, SmartOS, Bigstep, Scaleway, AliYun, Ec2, CloudStack, Hetzner, IBMCloud, Oracle, Exoscale, RbxCloud, UpCloud, VMware, Vultr, LXD, NWCS, None ]
+root@linux:/etc/cloud/cloud.cfg.d#
+
+
+Run the command "dpkg-reconfigure cloud-init" and select only VMware (this is not mandatory , but deselecting other datasources will reduce our boot time, since cloud-init doesn't need to look for the userdata/metadata from all the datasources in the list)
+
+
+root@linux:/etc/cloud/cloud.cfg.d# dpkg-reconfigure cloud-init
+root@linux:/etc/cloud/cloud.cfg.d#
+root@linux:/etc/cloud/cloud.cfg.d# cat /etc/cloud/cloud.cfg.d/90_dpkg.cfg
+# to update this file, run dpkg-reconfigure cloud-init
+datasource_list: [ VMware ]
+root@linux:/etc/cloud/cloud.cfg.d#
+
+
+
+root@linux:/etc/cloud/cloud.cfg.d# ls
+05_logging.cfg  90_dpkg.cfg  README
+root@linux:/etc/cloud/cloud.cfg.d#
+
+
+ensure you don't have other config files like below, remove other files except for "05_logging.cfg  90_dpkg.cfg  README"
+root@ubuntu-test:~# cat /etc/cloud/cloud.cfg.d/
+05_logging.cfg                              99-installer.cfg                            README
+90_dpkg.cfg                                 curtin-preserve-sources.cfg                 subiquity-disable-cloudinit-networking.cfg
+
+
+root@linux:/etc/cloud/cloud.cfg.d# ls
+05_logging.cfg  90_dpkg.cfg  README
+root@linux:/etc/cloud/cloud.cfg.d#
+
+
+disable network, so cloud-init doesn't configure networking,
+root@linux:/etc/cloud/cloud.cfg.d# vi /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+root@linux:/etc/cloud/cloud.cfg.d#
+root@linux:/etc/cloud/cloud.cfg.d# cat /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+network: {config: disabled}
+root@linux:/etc/cloud/cloud.cfg.d#
+
+
+As a final step, run the clean command to ensure that cloud-init will all the modules in the userdata and metadata.
+
+
+After provisioning new vm's using terraform,
+
+root@linux:~# dpkg -l | grep nginx
+root@linux:~#
+root@linux:~# dpkg -l | grep apache2
+root@linux:~#
+
+
+root@linux:/# cloud-init clean --logs
+root@linux:/#
+
+
+
+
+root@cloud-init-testing02:~# cloud-init status
+status: running
+root@cloud-init-testing02:~#
+
+after a minute, packages are installed,
+
+root@cloud-init-testing02:~# dpkg -l | grep nginx
+ii  libnginx-mod-http-image-filter         1.18.0-0ubuntu1.4                 amd64        HTTP image filter module for Nginx
+ii  libnginx-mod-http-xslt-filter          1.18.0-0ubuntu1.4                 amd64        XSLT Transformation module for Nginx
+ii  libnginx-mod-mail                      1.18.0-0ubuntu1.4                 amd64        Mail module for Nginx
+ii  libnginx-mod-stream                    1.18.0-0ubuntu1.4                 amd64        Stream module for Nginx
+ii  nginx                                  1.18.0-0ubuntu1.4                 all          small, powerful, scalable web/proxy server
+ii  nginx-common                           1.18.0-0ubuntu1.4                 all          small, powerful, scalable web/proxy server - common files
+ii  nginx-core                             1.18.0-0ubuntu1.4                 amd64        nginx web/proxy server (standard version)
+root@cloud-init-testing02:~#
+root@cloud-init-testing02:~# dpkg -l | grep apache2
+ii  apache2                                2.4.41-4ubuntu3.13                amd64        Apache HTTP Server
+ii  apache2-bin                            2.4.41-4ubuntu3.13                amd64        Apache HTTP Server (modules and other binary files)
+ii  apache2-data                           2.4.41-4ubuntu3.13                all          Apache HTTP Server (common files)
+ii  apache2-utils                          2.4.41-4ubuntu3.13                amd64        Apache HTTP Server (utility programs for web servers)
+root@cloud-init-testing02:~#
+root@cloud-init-testing02:~# cloud-init status
+status: done
+root@cloud-init-testing02:~#
+
+
+root@cloud-init-testing02:~# cat /root/testing-01
+=========Hello There from Terraform and Cloud-init automation=========
+root@cloud-init-testing02:~#
+root@cloud-init-testing02:~# ls -ltr /root/testing-01
+-rw-r--r-- 1 root root 71 Mar  2 07:15 /root/testing-01
+root@cloud-init-testing02:~#
+
+
+to check what userdata we have passed,
+root@cloud-init-testing02:~# cloud-init query userdata
+#cloud-config
+runcmd:
+  - [ sh, -c, echo "=========Hello There from Terraform and Cloud-init automation=========" > /root/testing-01]
+packages:
+- nginx
+- apache2
+root@cloud-init-testing02:~#
+
+
+root@cloud-init-testing02:~# vmware-rpctool "info-get guestinfo.userdata" | base64 -d
+#cloud-config
+runcmd:
+  - [ sh, -c, echo "=========Hello There from Terraform and Cloud-init automation=========" > /root/testing-01]
+packages:
+- nginx
+- apache2
+
+root@cloud-init-testing02:~#
+
+
+
+*************************************************************************************************************************************************************************
+
+
+$ terraform validate
+Success! The configuration is valid.
+
+
+
+$ terraform apply -var 'vcenter_user=username@domain' -var 'vcenter_password=mypassword' -var 'vcenter_url=vcenter_ip'
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02 will be created
+  + resource "vsphere_virtual_machine" "ubuntu-2004-cloud-init-testing02" {
+      + annotation                              = (known after apply)
+      + boot_retry_delay                        = 10000
+      + change_version                          = (known after apply)
+      + cpu_limit                               = -1
+      + cpu_share_count                         = (known after apply)
+      + cpu_share_level                         = "normal"
+      + datastore_cluster_id                    = "group-p1033"
+      + datastore_id                            = (known after apply)
+      + default_ip_address                      = (known after apply)
+      + ept_rvi_mode                            = "automatic"
+      + extra_config                            = {
+          + "guestinfo.userdata"          = "I2Nsb3VkLWNvbmZpZw0KcnVuY21kOg0KICAtIFsgc2gsIC1jLCBlY2hvICI9PT09PT09PT1IZWxsbyBUaGVyZSBmcm9tIFRlcnJhZm9ybSBhbmQgQ2xvdWQtaW5pdCBhdXRvbWF0aW9uPT09PT09PT09IiA+IC9yb290L3Rlc3RpbmctMDFdDQpwYWNrYWdlczoNCi0gbmdpbngNCi0gYXBhY2hlMg=="
+          + "guestinfo.userdata.encoding" = "base64"
+        }
+      + firmware                                = "bios"
+      + force_power_off                         = true
+      + guest_id                                = "ubuntu64Guest"
+      + guest_ip_addresses                      = (known after apply)
+      + hardware_version                        = (known after apply)
+      + host_system_id                          = (known after apply)
+      + hv_mode                                 = "hvAuto"
+      + id                                      = (known after apply)
+      + ide_controller_count                    = 2
+      + imported                                = (known after apply)
+      + latency_sensitivity                     = "normal"
+      + memory                                  = 16384
+      + memory_limit                            = -1
+      + memory_share_count                      = (known after apply)
+      + memory_share_level                      = "normal"
+      + migrate_wait_timeout                    = 30
+      + moid                                    = (known after apply)
+      + name                                    = "ubuntu-2004-cloud-init-testing02"
+      + num_cores_per_socket                    = 1
+      + num_cpus                                = 4
+      + power_state                             = (known after apply)
+      + poweron_timeout                         = 300
+      + reboot_required                         = (known after apply)
+      + resource_pool_id                        = "resgroup-30477"
+      + run_tools_scripts_after_power_on        = true
+      + run_tools_scripts_after_resume          = true
+      + run_tools_scripts_before_guest_shutdown = true
+      + run_tools_scripts_before_guest_standby  = true
+      + sata_controller_count                   = 0
+      + scsi_bus_sharing                        = "noSharing"
+      + scsi_controller_count                   = 1
+      + scsi_type                               = "pvscsi"
+      + shutdown_wait_timeout                   = 3
+      + storage_policy_id                       = (known after apply)
+      + swap_placement_policy                   = "inherit"
+      + tools_upgrade_policy                    = "manual"
+      + uuid                                    = (known after apply)
+      + vapp_transport                          = [
+          + "com.vmware.guestInfo",
+        ]
+      + vmware_tools_status                     = (known after apply)
+      + vmx_path                                = (known after apply)
+      + wait_for_guest_ip_timeout               = 0
+      + wait_for_guest_net_routable             = true
+      + wait_for_guest_net_timeout              = 5
+
+      + clone {
+          + template_uuid = "4203354a-9e48-66ae-149b-593bef170297"
+          + timeout       = 30
+
+          + customize {
+              + dns_server_list = [
+                  + "192.168.144.44",
+                ]
+              + ipv4_gateway    = "192.168.144.1"
+              + timeout         = 10
+
+              + linux_options {
+                  + host_name    = "cloud-init-testing02"
+                  + hw_clock_utc = true
+                }
+
+              + network_interface {
+                  + ipv4_address = "192.168.144.12"
+                  + ipv4_netmask = 24
+                }
+            }
+        }
+
+      + disk {
+          + attach            = false
+          + controller_type   = "scsi"
+          + datastore_id      = "<computed>"
+          + device_address    = (known after apply)
+          + disk_mode         = "persistent"
+          + disk_sharing      = "sharingNone"
+          + eagerly_scrub     = false
+          + io_limit          = -1
+          + io_reservation    = 0
+          + io_share_count    = 0
+          + io_share_level    = "normal"
+          + keep_on_remove    = false
+          + key               = 0
+          + label             = "disk0"
+          + path              = (known after apply)
+          + size              = 32
+          + storage_policy_id = (known after apply)
+          + thin_provisioned  = true
+          + unit_number       = 0
+          + uuid              = (known after apply)
+          + write_through     = false
+        }
+      + disk {
+          + attach            = false
+          + controller_type   = "scsi"
+          + datastore_id      = "<computed>"
+          + device_address    = (known after apply)
+          + disk_mode         = "persistent"
+          + disk_sharing      = "sharingNone"
+          + eagerly_scrub     = false
+          + io_limit          = -1
+          + io_reservation    = 0
+          + io_share_count    = 0
+          + io_share_level    = "normal"
+          + keep_on_remove    = false
+          + key               = 0
+          + label             = "disk1"
+          + path              = (known after apply)
+          + size              = 50
+          + storage_policy_id = (known after apply)
+          + thin_provisioned  = true
+          + unit_number       = 1
+          + uuid              = (known after apply)
+          + write_through     = false
+        }
+
+      + network_interface {
+          + adapter_type          = "vmxnet3"
+          + bandwidth_limit       = -1
+          + bandwidth_reservation = 0
+          + bandwidth_share_count = (known after apply)
+          + bandwidth_share_level = "normal"
+          + device_address        = (known after apply)
+          + key                   = (known after apply)
+          + mac_address           = (known after apply)
+          + network_id            = "dvportgroup-30509"
+        }
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + vsphere_datastore_cluster        = "group-p1033"
+  + vsphere_folder                   = "group-v30516"
+  + vsphere_network                  = "dvportgroup-30509"
+  + vsphere_resource_pool            = "resgroup-30477"
+  + vsphere_template_virtual_machine = "4203354a-9e48-66ae-149b-593bef170297"
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Creating...
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [10s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [20s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [30s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [41s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [51s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [1m1s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [1m11s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [1m21s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [1m31s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [1m41s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [1m51s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [2m1s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Still creating... [2m11s elapsed]
+vsphere_virtual_machine.ubuntu-2004-cloud-init-testing02: Creation complete after 2m19s [id=4203c931-80d8-0406-3dd9-d5b12b086828]
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+vsphere_datastore_cluster = "group-p1033"
+vsphere_folder = "group-v30516"
+vsphere_network = "dvportgroup-30509"
+vsphere_resource_pool = "resgroup-30477"
+vsphere_template_virtual_machine = "4203354a-9e48-66ae-149b-593bef170297"
+
+Administrator@ADDC-DEV MINGW64 /terraform-vsphere-cloud-init
+
+
+
