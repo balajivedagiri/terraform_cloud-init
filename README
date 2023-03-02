@@ -1,6 +1,9 @@
 # terraform_cloud-init
 
 
+Below steps are to be carried out on a VM that will be converted to a template,
+**************************************************************************************************************************************************
+**************************************************************************************************************************************************
 
 root@linux:~# dpkg -l | grep open-vm-tools
 ii  open-vm-tools                          2:11.3.0-2ubuntu0~ubuntu20.04.4   amd64        Open VMware Tools for virtual machines hosted on VMware (CLI)
@@ -159,9 +162,10 @@ root@linux:/etc/cloud/cloud.cfg.d#
 
 
 As a final step, run the clean command to ensure that cloud-init will all the modules in the userdata and metadata.
+root@linux:/# cloud-init clean --logs
+root@linux:/#
 
-
-After provisioning new vm's using terraform,
+we are going to install below packages using cloud-init, below is the confirmation those are not installed on the template,
 
 root@linux:~# dpkg -l | grep nginx
 root@linux:~#
@@ -169,10 +173,12 @@ root@linux:~# dpkg -l | grep apache2
 root@linux:~#
 
 
-root@linux:/# cloud-init clean --logs
-root@linux:/#
 
 
+
+After provisioning new vm's using terraform,
+***************************************************************************************************************************************************************************************************************************
+***************************************************************************************************************************************************************************************************************************
 
 
 root@cloud-init-testing02:~# cloud-init status
