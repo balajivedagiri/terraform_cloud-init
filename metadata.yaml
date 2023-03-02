@@ -1,0 +1,11 @@
+local_hostname: terraform-cloud-init-testing01
+network:
+  version: 2
+  ethernets:
+    ens160:
+      dhcp6: false
+      addresses: [ "192.168.144.121/24" ]
+      gateway4: 192.168.144.1
+      nameservers:
+        addresses: [ "192.168.144.44" ]
+

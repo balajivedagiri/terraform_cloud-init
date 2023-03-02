@@ -1,0 +1,6 @@
+#cloud-config
+runcmd:
+  - [ sh, -c, echo "=========Hello There from Terraform and Cloud-init automation=========" > /root/testing-01]
+packages:
+- nginx
+- apache2
